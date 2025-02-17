@@ -49,7 +49,7 @@ st.plotly_chart(fig2)
 with st.expander('Input features'):
   st.write('**Imput penguin**')
   st.dataframe(input_df)
-  st.write('**Combined penguins data** (Input row + original data)
+  st.write('**Combined penguins data** (Input row + original data)')
   st.dataframe(input_penguins)
 
 encode = ['island', 'sex']
