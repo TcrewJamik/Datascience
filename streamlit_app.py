@@ -77,3 +77,44 @@ with st.expander('Data preparation'):
     st.dataframe(input_row)
     st.write('**Encoded y**')
     st.write(y)
+
+from sklearn.ensemble import RandomForestClassifier
+import numpy as np
+
+base_rf = RandomForestClassifier(random_state=42)
+base_rf.fit(X, y)
+prediction = base_rf.predict(input_row)
+prediction_proba = base_rf.predict_proba(input_row)
+df_prediction_proba = pd.DataFrame(prediction_proba, columns=['Adelie', 'Chinstrap', 'Gentoo'])
+
+st.subheader('Predicted Species')
+st.dataframe(
+    df_prediction_proba,
+    column_config={
+        'Adelie': st.column_config.ProgressColumn(
+            'Adelie',
+            format='%f',
+            width='medium',
+            min_value=0,
+            max_value=1
+        ),
+        'Chinstrap': st.column_config.ProgressColumn(
+            'Chinstrap',
+            format='%f',
+            width='medium',
+            min_value=0,
+            max_value=1
+        ),
+        'Gentoo': st.column_config.ProgressColumn(
+            'Gentoo',
+            format='%f',
+            width='medium',
+            min_value=0,
+            max_value=1
+        ),
+    },
+    hide_index=True
+)
+
+penguins_species = np.array(['Adelie', 'Chinstrap', 'Gentoo'])
+st.success(f"Predicted species: **{penguins_species[prediction][0]}**")
