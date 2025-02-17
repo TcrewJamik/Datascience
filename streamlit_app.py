@@ -33,14 +33,14 @@ fig = px.scatter(
   x = 'bill_length_mm', 
   y = 'bill_depth_mm',
   color = 'island', 
-  title = 'Bill Length vs Bill Depth by Island'
-)
+  title = 'Bill Length vs Bill Depth by Island')
+
 st.plotly_chart(fig)
 
 fig2 = px.histogram(
   df, 
   x = 'body_mass_g',
   nbins = 30,
-  title = 'Distribution',
-)
+  title = 'Distribution')
+
 st.plotly_chart(fig2)
