@@ -15,7 +15,7 @@ warnings.filterwarnings('ignore')
 
 st.set_page_config(page_title="Anneal DataSet", page_icon="⚙️", layout="wide")
 
-# Загружаем данные 
+# Загружаем данные
 
 file_path = "anneal.data"
 
@@ -64,7 +64,7 @@ categorical_cols = data.select_dtypes(include=['object']).columns
 for col in categorical_cols:
     data[col] = label_encoder.fit_transform(data[col])
 
-# Разделение данных 
+# Разделение данных
 X = data.drop('binary_class', axis=1)
 y = data['binary_class']
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -90,16 +90,16 @@ with st.sidebar:
 
     elif model_choice == "Logistic Regression":
         hyperparams['C'] = st.slider("C (Regularization)", min_value=0.001, max_value=10.0, step=0.01, value=1.0, format="%.3f")
-        penalty_options = ['l1', 'l2', 'none'] 
-        hyperparams['penalty'] = st.selectbox("penalty", options=penalty_options, index=1) 
+        penalty_options = ['l1', 'l2', 'none']
+        hyperparams['penalty'] = st.selectbox("penalty", options=penalty_options, index=1)
 
-        solver_options = ['lbfgs', 'liblinear'] 
+        solver_options = ['lbfgs', 'liblinear']
         if hyperparams['penalty'] == 'l1':
-            solver_options = ['liblinear', 'saga'] 
+            solver_options = ['liblinear', 'saga']
         elif hyperparams['penalty'] == 'none':
-            solver_options = ['lbfgs', 'newton-cg', 'sag', 'saga'] 
+            solver_options = ['lbfgs', 'newton-cg', 'sag', 'saga']
 
-        hyperparams['solver'] = st.selectbox("solver", options=solver_options, index=0) 
+        hyperparams['solver'] = st.selectbox("solver", options=solver_options, index=0)
 
 
     elif model_choice == "Decision Tree":
@@ -230,6 +230,15 @@ if st.session_state.get('models_trained', False): # Conditional check here!
 
     st.subheader("Отчет о классификации")
     st.text(classification_report(st.session_state['y_test'], st.session_state['y_pred']))
+
+    # Display Prediction Results
+    st.header("🔮 Результаты предсказания")
+    results_df = pd.DataFrame(st.session_state['X_test_selected'].copy())
+    results_df['Истинный класс'] = st.session_state['y_test'].values
+    results_df['Предсказанный класс'] = st.session_state['y_pred']
+    results_df['Вероятность класса 1'] = st.session_state['y_prob']
+
+    st.dataframe(results_df)
 
 
 st.markdown("---")
