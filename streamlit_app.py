@@ -15,7 +15,8 @@ warnings.filterwarnings('ignore')
 
 st.set_page_config(page_title="Anneal DataSet", page_icon="⚙️", layout="wide")
 
-# ---- Загрузка данных ----
+# Загружаем данные 
+
 file_path = "anneal.data"
 
 @st.cache_data
@@ -32,7 +33,7 @@ def load_data(file_path):
 data_original = load_data(file_path)
 data = data_original.copy()
 
-# ---- Предобработка данных ----
+# Предобработка данных
 columns_to_drop = [
     "famiily", "temper-rolling", "non-ageing", "surface-finish", "enamelability", "bc", "bf", "bt", "bl", "m",
     "chrom", "phos", "cbond", "marvi", "exptl", "ferro", "corr", "blue/bright/varn/clean", "lustre", "jurofm",
@@ -63,7 +64,7 @@ categorical_cols = data.select_dtypes(include=['object']).columns
 for col in categorical_cols:
     data[col] = label_encoder.fit_transform(data[col])
 
-# ---- Разделение данных ----
+# Разделение данных 
 X = data.drop('binary_class', axis=1)
 y = data['binary_class']
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -73,10 +74,9 @@ numerical_cols = X_train.columns
 X_train[numerical_cols] = scaler.fit_transform(X_train[numerical_cols])
 X_test[numerical_cols] = scaler.transform(X_test[numerical_cols])
 
-# ---- Streamlit App Layout ----
 st.title("⚙️ Anneal DataSet")
 
-# ---- Sidebar for Controls ----
+# Слайдбары для настройки
 with st.sidebar:
     st.header("🛠️ Настройки модели")
     model_choice = st.selectbox("Выберите модель:", ["KNN", "Logistic Regression", "Decision Tree"])
@@ -90,16 +90,16 @@ with st.sidebar:
 
     elif model_choice == "Logistic Regression":
         hyperparams['C'] = st.slider("C (Regularization)", min_value=0.001, max_value=10.0, step=0.01, value=1.0, format="%.3f")
-        penalty_options = ['l1', 'l2', 'none'] # Убрали 'elasticnet' для простоты
-        hyperparams['penalty'] = st.selectbox("penalty", options=penalty_options, index=1) # Убрали 'elasticnet'
+        penalty_options = ['l1', 'l2', 'none'] 
+        hyperparams['penalty'] = st.selectbox("penalty", options=penalty_options, index=1) 
 
-        solver_options = ['lbfgs', 'liblinear'] # Базовый набор solver-ов
+        solver_options = ['lbfgs', 'liblinear'] 
         if hyperparams['penalty'] == 'l1':
-            solver_options = ['liblinear', 'saga'] # Solver-ы для l1 penalty
+            solver_options = ['liblinear', 'saga'] 
         elif hyperparams['penalty'] == 'none':
-            solver_options = ['lbfgs', 'newton-cg', 'sag', 'saga'] # Solver-ы для penalty=none
+            solver_options = ['lbfgs', 'newton-cg', 'sag', 'saga'] 
 
-        hyperparams['solver'] = st.selectbox("solver", options=solver_options, index=0) # Solver, options зависят от penalty
+        hyperparams['solver'] = st.selectbox("solver", options=solver_options, index=0) 
 
 
     elif model_choice == "Decision Tree":
@@ -116,7 +116,7 @@ with st.sidebar:
     selected_features = st.multiselect("Выберите признаки для обучения:", available_features, default=default_features)
     retrain_button = st.button("🔥 Переобучить модель")
 
-# ---- Data Exploration Section ----
+# Иследование данных
 expander_data_explore = st.expander("🔍 Исследование данных", expanded=False)
 with expander_data_explore:
     st.subheader("Предварительный просмотр данных")
@@ -155,7 +155,7 @@ with expander_data_explore:
                 st.pyplot(fig_hist, use_container_width=True)
 
 
-# ---- Model Training and Evaluation ----
+# Обучение и оценка
 if retrain_button or not st.session_state.get('models_trained', False):
     st.session_state['models_trained'] = True
 
@@ -167,7 +167,7 @@ if retrain_button or not st.session_state.get('models_trained', False):
         X_train_selected = X_train[selected_features]
         X_test_selected = X_test[selected_features]
 
-    # Model Training with Hyperparameter Tuning
+    # Обучение моделей с разными гиперпараметрами
     if model_choice == "KNN":
         classifier = KNeighborsClassifier(**hyperparams)
     elif model_choice == "Logistic Regression":
@@ -191,7 +191,7 @@ if retrain_button or not st.session_state.get('models_trained', False):
     st.session_state['model_choice'] = model_choice
     st.session_state['hyperparams'] = hyperparams
 
-# ---- Model Evaluation Display ----
+# Отображение результатов моделей
 st.header("🏆 Оценка модели")
 if st.session_state.get('models_trained', False): # Conditional check here!
     st.subheader(f"Модель: {st.session_state['model_choice']}")
@@ -206,7 +206,7 @@ if st.session_state.get('models_trained', False): # Conditional check here!
         st.metric("Полнота (Recall)", f"{recall_score(st.session_state['y_test'], st.session_state['y_pred']):.3f}")
 
     with col_charts:
-        # Confusion Matrix
+        # Confusion Matri
         cm = confusion_matrix(st.session_state['y_test'], st.session_state['y_pred'])
         fig_cm, ax_cm = plt.subplots()
         sns.heatmap(cm, annot=True, fmt='d', cmap='viridis', ax=ax_cm) # viridis for better contrast
@@ -215,7 +215,7 @@ if st.session_state.get('models_trained', False): # Conditional check here!
         ax_cm.set_title('Матрица ошибок (Confusion Matrix)')
         st.pyplot(fig_cm)
 
-        # ROC Curve (Plotly)
+        # ROC
         fpr, tpr, thresholds = roc_curve(st.session_state['y_test'], st.session_state['y_prob'])
         roc_auc = auc(fpr, tpr)
 
