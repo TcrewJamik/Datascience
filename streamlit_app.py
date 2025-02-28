@@ -193,9 +193,9 @@ if retrain_button or not st.session_state.get('models_trained', False):
 
 # ---- Model Evaluation Display ----
 st.header("🏆 Оценка модели")
-if st.session_state.get('models_trained', False):
+if st.session_state.get('models_trained', False): # Conditional check here!
     st.subheader(f"Модель: {st.session_state['model_choice']}")
-    st.write(f"Гиперпараметры: {st.session_state['hyperparams']}")
+    st.write(f"Гиперпараметры: {st.session_state['hyperparams']}") # Now safe to access hyperparams
 
     col_metrics, col_charts = st.columns(2)
     with col_metrics:
