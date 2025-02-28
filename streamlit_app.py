@@ -119,20 +119,26 @@ with st.sidebar:
     st.markdown("---")
     st.header("🔮 Единичное предсказание")
     prediction_data = {}
-    if selected_features: # Проверяем, что признаки выбраны
+    if selected_features:
         for feature in selected_features:
             if feature in numerical_cols:
-                prediction_data[feature] = st.sidebar.number_input(f"Введите значение для {feature}:", value=0.0) # Или другое значение по умолчанию
+                min_val = float(X_train[feature].min())
+                max_val = float(X_train[feature].max())
+                default_val = float(X_train[feature].mean())  # Можно выбрать другое значение по умолчанию
+                prediction_data[feature] = st.sidebar.slider(
+                    f"Выберите значение для {feature}:",
+                    min_value=min_val,
+                    max_value=max_val,
+                    value=default_val
+                )
             elif feature in categorical_cols:
-                # Предполагаем, что categorical_cols все еще содержат имена исходных категориальных признаков
-                # и LabelEncoder был применен к data[categorical_cols]
-                unique_categories = data_original[feature].dropna().unique() # Используем data_original для исходных категорий
+                unique_categories = data_original[feature].dropna().unique()
                 if len(unique_categories) > 0:
                     prediction_data[feature] = st.sidebar.selectbox(f"Выберите значение для {feature}:", options=unique_categories)
                 else:
-                    prediction_data[feature] = st.sidebar.text_input(f"Введите значение для {feature}:") # Если нет уникальных категорий
+                    prediction_data[feature] = st.sidebar.text_input(f"Введите значение для {feature}:")
             else:
-                prediction_data[feature] = st.sidebar.text_input(f"Введите значение для {feature}:") # Для других типов, если есть
+                prediction_data[feature] = st.sidebar.text_input(f"Введите значение для {feature}:")
 
         predict_single_button = st.sidebar.button("✨ Предсказать класс")
     else:
@@ -214,14 +220,14 @@ if retrain_button or not st.session_state.get('models_trained', False):
     st.session_state['y_prob'] = y_prob
     st.session_state['model_choice'] = model_choice
     st.session_state['hyperparams'] = hyperparams
-    st.session_state['selected_features'] = selected_features # Сохраняем выбранные признаки в session_state
+    st.session_state['selected_features'] = selected_features
 
 
 # Отображение результатов моделей
 st.header("🏆 Оценка модели")
-if st.session_state.get('models_trained', False): # Conditional check here!
+if st.session_state.get('models_trained', False):
     st.subheader(f"Модель: {st.session_state['model_choice']}")
-    st.write(f"Гиперпараметры: {st.session_state['hyperparams']}") # Now safe to access hyperparams
+    st.write(f"Гиперпараметры: {st.session_state['hyperparams']}")
 
     col_metrics, col_charts = st.columns(2)
     with col_metrics:
@@ -235,7 +241,7 @@ if st.session_state.get('models_trained', False): # Conditional check here!
         # Confusion Matri
         cm = confusion_matrix(st.session_state['y_test'], st.session_state['y_pred'])
         fig_cm, ax_cm = plt.subplots()
-        sns.heatmap(cm, annot=True, fmt='d', cmap='viridis', ax=ax_cm) # viridis for better contrast
+        sns.heatmap(cm, annot=True, fmt='d', cmap='viridis', ax=ax_cm)
         ax_cm.set_xlabel('Предсказанные классы')
         ax_cm.set_ylabel('Истинные классы')
         ax_cm.set_title('Матрица ошибок (Confusion Matrix)')
@@ -251,7 +257,7 @@ if st.session_state.get('models_trained', False): # Conditional check here!
             labels=dict(x='False Positive Rate', y='True Positive Rate'),
         )
         fig_roc.add_shape(type='line', line=dict(dash='dash'), x0=0, x1=1, y0=0, y1=1)
-        fig_roc.update_traces(fillcolor='rgba(99, 255, 132, 0.6)') # Vibrant green fill
+        fig_roc.update_traces(fillcolor='rgba(99, 255, 132, 0.6)')
         st.plotly_chart(fig_roc)
 
     st.subheader("Отчет о классификации")
@@ -269,15 +275,15 @@ if st.session_state.get('models_trained', False): # Conditional check here!
 # Логика для единичного предсказания
 if predict_single_button and st.session_state.get('models_trained', False) and prediction_data:
     single_prediction_df = pd.DataFrame([prediction_data])
-    single_prediction_df = single_prediction_df[st.session_state['selected_features']] # Убедитесь, что порядок столбцов правильный
+    single_prediction_df = single_prediction_df[st.session_state['selected_features']]
 
     # Предобработка единичного образца
     for col in single_prediction_df.columns:
-        if col in categorical_cols: # Используем исходный список категориальных признаков
-            single_prediction_df[col] = single_prediction_df[col].astype(str) # Ensure string type for encoding
-            single_prediction_df[col] = label_encoder.transform(single_prediction_df[col]) # Кодирование категорий
+        if col in categorical_cols:
+            single_prediction_df[col] = single_prediction_df[col].astype(str)
+            single_prediction_df[col] = label_encoder.transform(single_prediction_df[col])
         elif col in numerical_cols:
-            single_prediction_df[col] = scaler.transform(single_prediction_df[[col]]) # Масштабирование численных признаков
+            single_prediction_df[col] = scaler.transform(single_prediction_df[[col]])
 
 
     single_prediction = st.session_state['classifier'].predict(single_prediction_df)
