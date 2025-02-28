@@ -252,7 +252,7 @@ if st.session_state.get('models_trained', False): # Conditional check here!
                 classifier_vis.fit(X_train_top2_np, y_train_np) # FIT classifier_vis here!
 
                 fig_db = plt.figure(figsize=(8, 6))
-                plot_decision_regions(X_train_top2_np, y_train_np, clf=classifier_vis, legend=2, resolution=resolution_value) # Use resolution here!
+                plot_decision_regions(X_train_top2_np, y_train_np, clf=st.session_state['classifier'], legend=2, resolution=resolution_value) # Use st.session_state['classifier']!
                 plt.xlabel(selected_features[0].capitalize())
                 plt.ylabel(selected_features[1].capitalize())
                 plt.title(f'Граница решений для {st.session_state["model_choice"]}')
