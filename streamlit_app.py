@@ -16,7 +16,6 @@ warnings.filterwarnings('ignore')
 st.set_page_config(page_title="Anneal DataSet", page_icon="⚙️", layout="wide")
 
 # Загружаем данные
-
 file_path = "anneal.data"
 
 @st.cache_data
@@ -69,6 +68,9 @@ X = data.drop('binary_class', axis=1)
 y = data['binary_class']
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
+# Сохраним исходные данные для X_train до масштабирования (для корректного ввода пользователем)
+X_train_orig = X_train.copy()
+
 scaler = StandardScaler()
 numerical_cols = X_train.columns
 X_train[numerical_cols] = scaler.fit_transform(X_train[numerical_cols])
@@ -101,7 +103,6 @@ with st.sidebar:
 
         hyperparams['solver'] = st.selectbox("solver", options=solver_options, index=0)
 
-
     elif model_choice == "Decision Tree":
         hyperparams['criterion'] = st.selectbox("criterion", options=['gini', 'entropy'], index=0)
         hyperparams['max_depth'] = st.slider("max_depth", min_value=1, max_value=20, value=5, step=1)
@@ -116,7 +117,7 @@ with st.sidebar:
     selected_features = st.multiselect("Выберите признаки для обучения:", available_features, default=default_features)
     retrain_button = st.button("🔥 Предсказать")
 
-# Иследование данных
+# Исследование данных
 expander_data_explore = st.expander("🔍 Исследование данных", expanded=False)
 with expander_data_explore:
     st.subheader("Предварительный просмотр данных")
@@ -154,7 +155,6 @@ with expander_data_explore:
                 ax_hist.set_title(col, fontsize=10)
                 st.pyplot(fig_hist, use_container_width=True)
 
-
 # Обучение и оценка
 if retrain_button or not st.session_state.get('models_trained', False):
     st.session_state['models_trained'] = True
@@ -167,11 +167,11 @@ if retrain_button or not st.session_state.get('models_trained', False):
         X_train_selected = X_train[selected_features]
         X_test_selected = X_test[selected_features]
 
-    # Обучение моделей с разными гиперпараметрами
+    # Обучение модели с выбранными гиперпараметрами
     if model_choice == "KNN":
         classifier = KNeighborsClassifier(**hyperparams)
     elif model_choice == "Logistic Regression":
-        classifier = LogisticRegression(max_iter=1000, random_state=42, class_weight='balanced', **hyperparams) # Increased max_iter
+        classifier = LogisticRegression(max_iter=1000, random_state=42, class_weight='balanced', **hyperparams)
     elif model_choice == "Decision Tree":
         classifier = DecisionTreeClassifier(random_state=42, **hyperparams)
     else:
@@ -190,12 +190,13 @@ if retrain_button or not st.session_state.get('models_trained', False):
     st.session_state['y_prob'] = y_prob
     st.session_state['model_choice'] = model_choice
     st.session_state['hyperparams'] = hyperparams
+    st.session_state['selected_features'] = selected_features  # сохраняем выбранные признаки
 
 # Отображение результатов моделей
 st.header("🏆 Оценка модели")
-if st.session_state.get('models_trained', False): # Conditional check here!
+if st.session_state.get('models_trained', False):
     st.subheader(f"Модель: {st.session_state['model_choice']}")
-    st.write(f"Гиперпараметры: {st.session_state['hyperparams']}") # Now safe to access hyperparams
+    st.write(f"Гиперпараметры: {st.session_state['hyperparams']}")
 
     col_metrics, col_charts = st.columns(2)
     with col_metrics:
@@ -206,40 +207,67 @@ if st.session_state.get('models_trained', False): # Conditional check here!
         st.metric("Полнота (Recall)", f"{recall_score(st.session_state['y_test'], st.session_state['y_pred']):.3f}")
 
     with col_charts:
-        # Confusion Matri
+        # Матрица ошибок
         cm = confusion_matrix(st.session_state['y_test'], st.session_state['y_pred'])
         fig_cm, ax_cm = plt.subplots()
-        sns.heatmap(cm, annot=True, fmt='d', cmap='viridis', ax=ax_cm) # viridis for better contrast
+        sns.heatmap(cm, annot=True, fmt='d', cmap='viridis', ax=ax_cm)
         ax_cm.set_xlabel('Предсказанные классы')
         ax_cm.set_ylabel('Истинные классы')
         ax_cm.set_title('Матрица ошибок (Confusion Matrix)')
         st.pyplot(fig_cm)
 
-        # ROC
+        # ROC-кривая
         fpr, tpr, thresholds = roc_curve(st.session_state['y_test'], st.session_state['y_prob'])
         roc_auc = auc(fpr, tpr)
-
         fig_roc = px.area(
             x=fpr, y=tpr,
             title=f'ROC-кривая (AUC = {roc_auc:.2f})',
             labels=dict(x='False Positive Rate', y='True Positive Rate'),
         )
         fig_roc.add_shape(type='line', line=dict(dash='dash'), x0=0, x1=1, y0=0, y1=1)
-        fig_roc.update_traces(fillcolor='rgba(99, 255, 132, 0.6)') # Vibrant green fill
+        fig_roc.update_traces(fillcolor='rgba(99, 255, 132, 0.6)')
         st.plotly_chart(fig_roc)
 
     st.subheader("Отчет о классификации")
     st.text(classification_report(st.session_state['y_test'], st.session_state['y_pred']))
 
-    # Display Prediction Results
-    st.header("Результаты предсказания")
+    st.header("Результаты предсказания для тестового набора")
     results_df = pd.DataFrame(st.session_state['X_test_selected'].copy())
     results_df['Истинный класс'] = st.session_state['y_test'].values
     results_df['Предсказанный класс'] = st.session_state['y_pred']
     results_df['Вероятность класса 1'] = st.session_state['y_prob']
-
     st.dataframe(results_df)
 
+# Новый блок для получения предсказания одного примера
+st.markdown("---")
+st.header("Предсказание для одного примера")
+if st.session_state.get('models_trained', False):
+    # Используем выбранные признаки, сохранённые в session_state
+    sel_features = st.session_state['selected_features']
+    with st.form("single_prediction_form"):
+        st.subheader("Введите значения для признаков (в исходном масштабе)")
+        input_values = {}
+        # Для удобства используем среднее значение из исходного X_train для каждого признака
+        for feature in sel_features:
+            default_val = X_train_orig[feature].mean()
+            input_val = st.number_input(f"{feature}", value=float(default_val))
+            input_values[feature] = input_val
+        submitted = st.form_submit_button("Предсказать")
+        if submitted:
+            # Масштабируем введённые значения с использованием параметров scaler
+            input_data = {}
+            for feature in sel_features:
+                # Находим индекс признака в исходном X_train (после разделения столбцов)
+                feature_index = list(X_train.columns).index(feature)
+                feature_mean = scaler.mean_[feature_index]
+                feature_std = np.sqrt(scaler.var_[feature_index])
+                scaled_value = (input_values[feature] - feature_mean) / feature_std
+                input_data[feature] = scaled_value
+            input_df = pd.DataFrame([input_data])
+            single_pred = st.session_state['classifier'].predict(input_df)[0]
+            single_prob = st.session_state['classifier'].predict_proba(input_df)[0, 1]
+            st.write(f"Предсказанный класс: {single_pred}")
+            st.write(f"Вероятность класса 1: {single_prob:.3f}")
 
 st.markdown("---")
 st.markdown("Разработано компанией Jamshed Corporation совместно с ZyplAI")
