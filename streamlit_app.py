@@ -14,7 +14,7 @@ import numpy as np
 import warnings
 warnings.filterwarnings('ignore')
 
-st.set_page_config(page_title="Исследование Anneal Dataset", page_icon="🔥", layout="wide")
+st.set_page_config(page_title="Anneal Steel Explorer Pro", page_icon="⚙️", layout="wide")
 
 # ---- Загрузка данных ----
 file_path = "anneal.data"
@@ -75,20 +75,35 @@ X_train[numerical_cols] = scaler.fit_transform(X_train[numerical_cols])
 X_test[numerical_cols] = scaler.transform(X_test[numerical_cols])
 
 # ---- Streamlit App Layout ----
-st.title("🔥 Anneal Steel Dataset Explorer 🔥")
-st.markdown("Интерактивное приложение для исследования и классификации данных Anneal Steel. "
-            "Выберите модель, настройте параметры, и изучите результаты!")
+st.title("⚙️ Anneal Steel Explorer Pro 🚀")
+st.markdown("Продвинутое приложение для исследования и классификации Anneal Steel Dataset. "
+            "Настройте модели, исследуйте данные и получите глубокое понимание!")
 
 # ---- Sidebar for Controls ----
 with st.sidebar:
-    st.header("⚙️ Настройки модели")
+    st.header("🛠️ Настройки модели")
     model_choice = st.selectbox("Выберите модель:", ["KNN", "Logistic Regression", "Decision Tree"])
 
     hyperparams = {}
     if model_choice == "KNN":
         hyperparams['n_neighbors'] = st.slider("n_neighbors", min_value=1, max_value=20, value=3, step=1)
+        hyperparams['weights'] = st.selectbox("weights", options=['uniform', 'distance'], index=0)
+        hyperparams['algorithm'] = st.selectbox("algorithm", options=['auto', 'ball_tree', 'kd_tree', 'brute'], index=0)
+        hyperparams['p'] = st.slider("p (Minkowski distance power)", min_value=1, max_value=5, value=2, step=1)
+
+    elif model_choice == "Logistic Regression":
+        hyperparams['C'] = st.slider("C (Regularization)", min_value=0.001, max_value=10.0, step=0.01, value=1.0, format="%.3f")
+        hyperparams['penalty'] = st.selectbox("penalty", options=['l1', 'l2', 'elasticnet', 'none'], index=1)
+        hyperparams['solver'] = st.selectbox("solver", options=['newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga'], index=1)
+        if hyperparams['penalty'] == 'elasticnet':
+            hyperparams['l1_ratio'] = st.slider("l1_ratio (Elastic-Net)", min_value=0.0, max_value=1.0, step=0.05, value=0.5)
+
     elif model_choice == "Decision Tree":
-        hyperparams['max_depth'] = st.slider("max_depth", min_value=1, max_value=10, value=5, step=1)
+        hyperparams['criterion'] = st.selectbox("criterion", options=['gini', 'entropy'], index=0)
+        hyperparams['max_depth'] = st.slider("max_depth", min_value=1, max_value=20, value=5, step=1)
+        hyperparams['min_samples_split'] = st.slider("min_samples_split", min_value=2, max_value=20, value=2, step=1)
+        hyperparams['min_samples_leaf'] = st.slider("min_samples_leaf", min_value=1, max_value=10, value=1, step=1)
+        hyperparams['max_features'] = st.selectbox("max_features", options=['auto', 'sqrt', 'log2', None], index=3)
 
     st.markdown("---")
     st.header("📊 Выбор признаков")
@@ -96,7 +111,8 @@ with st.sidebar:
     default_features = ['formability', 'condition'] if all(f in available_features for f in ['formability', 'condition']) else available_features[:min(2, len(available_features))]
     selected_features = st.multiselect("Выберите признаки для обучения:", available_features, default=default_features)
     show_decision_boundaries = st.checkbox("Показать границы решений", value=True)
-    retrain_button = st.button("🚀 Переобучить модель")
+    grid_points_value = st.slider("Плотность сетки границ решений", min_value=20, max_value=150, value=75, step=25) # For performance control
+    retrain_button = st.button("🔥 Переобучить модель")
 
 # ---- Data Exploration Section ----
 expander_data_explore = st.expander("🔍 Исследование данных", expanded=False)
@@ -124,7 +140,7 @@ with expander_data_explore:
                                 title="Процент пропущенных значений в признаках")
         st.plotly_chart(fig_missing)
     else:
-        st.info("Пропущенные значения отсутствуют в исходных данных или уже обработаны.")
+        st.info("Пропущенные значения отсутствуют или уже обработаны.")
 
     if st.checkbox("Показать гистограммы признаков"):
         st.subheader("Гистограммы признаков")
@@ -133,8 +149,8 @@ with expander_data_explore:
             with feature_hist_cols[i % 3]:
                 fig_hist, ax_hist = plt.subplots()
                 sns.histplot(data=X_train, x=col, kde=True, ax=ax_hist)
-                ax_hist.set_title(col, fontsize=10) # Smaller title for better layout
-                st.pyplot(fig_hist, use_container_width=True) # use_container_width for better responsiveness
+                ax_hist.set_title(col, fontsize=10)
+                st.pyplot(fig_hist, use_container_width=True)
 
 
 # ---- Model Training and Evaluation ----
@@ -150,13 +166,13 @@ if retrain_button or not st.session_state.get('models_trained', False):
         X_train_selected = X_train[selected_features]
         X_test_selected = X_test[selected_features]
 
-    # Model Training based on selected model and hyperparameters
+    # Model Training with Hyperparameter Tuning
     if model_choice == "KNN":
-        classifier = KNeighborsClassifier(n_neighbors=hyperparams.get('n_neighbors', 3))
+        classifier = KNeighborsClassifier(**hyperparams)
     elif model_choice == "Logistic Regression":
-        classifier = LogisticRegression(max_iter=565, random_state=42, class_weight='balanced')
+        classifier = LogisticRegression(max_iter=1000, random_state=42, class_weight='balanced', **hyperparams) # Increased max_iter
     elif model_choice == "Decision Tree":
-        classifier = DecisionTreeClassifier(max_depth=hyperparams.get('max_depth', 5), random_state=42)
+        classifier = DecisionTreeClassifier(random_state=42, **hyperparams)
     else:
         classifier = LogisticRegression()
 
@@ -172,11 +188,14 @@ if retrain_button or not st.session_state.get('models_trained', False):
     st.session_state['y_pred'] = y_pred
     st.session_state['y_prob'] = y_prob
     st.session_state['model_choice'] = model_choice
+    st.session_state['hyperparams'] = hyperparams # Store hyperparameters
+
 
 # ---- Model Evaluation Display ----
 st.header("🏆 Оценка модели")
 if st.session_state.get('models_trained', False):
     st.subheader(f"Модель: {st.session_state['model_choice']}")
+    st.write(f"Гиперпараметры: {st.session_state['hyperparams']}")
 
     col_metrics, col_charts = st.columns(2)
     with col_metrics:
@@ -190,13 +209,13 @@ if st.session_state.get('models_trained', False):
         # Confusion Matrix
         cm = confusion_matrix(st.session_state['y_test'], st.session_state['y_pred'])
         fig_cm, ax_cm = plt.subplots()
-        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax_cm)
+        sns.heatmap(cm, annot=True, fmt='d', cmap='viridis', ax=ax_cm) # viridis for better contrast
         ax_cm.set_xlabel('Предсказанные классы')
         ax_cm.set_ylabel('Истинные классы')
         ax_cm.set_title('Матрица ошибок (Confusion Matrix)')
         st.pyplot(fig_cm)
 
-        # ROC Curve (Plotly for interactivity)
+        # ROC Curve (Plotly)
         fpr, tpr, thresholds = roc_curve(st.session_state['y_test'], st.session_state['y_prob'])
         roc_auc = auc(fpr, tpr)
 
@@ -205,11 +224,8 @@ if st.session_state.get('models_trained', False):
             title=f'ROC-кривая (AUC = {roc_auc:.2f})',
             labels=dict(x='False Positive Rate', y='True Positive Rate'),
         )
-        fig_roc.add_shape(
-            type='line', line=dict(dash='dash'),
-            x0=0, x1=1, y0=0, y1=1
-        )
-        fig_roc.update_traces(fillcolor='rgba(4, 125, 224, 0.6)') # Slightly transparent fill
+        fig_roc.add_shape(type='line', line=dict(dash='dash'), x0=0, x1=1, y0=0, y1=1)
+        fig_roc.update_traces(fillcolor='rgba(99, 255, 132, 0.6)') # Vibrant green fill
         st.plotly_chart(fig_roc)
 
     st.subheader("Отчет о классификации")
@@ -223,23 +239,24 @@ if st.session_state.get('models_trained', False):
 
         st.info("Граница решений визуализируется для первых двух выбранных признаков.")
 
-        classifier_vis = None
-        if st.session_state['model_choice'] == "KNN":
-            classifier_vis = KNeighborsClassifier(n_neighbors=hyperparams.get('n_neighbors', 3))
-        elif st.session_state['model_choice'] == "Logistic Regression":
-            classifier_vis = LogisticRegression(max_iter=565, random_state=42)
-        elif st.session_state['model_choice'] == "Decision Tree":
-            classifier_vis = DecisionTreeClassifier(max_depth=hyperparams.get('max_depth', 5), random_state=42)
+        with st.spinner("Отрисовка границ решений..."):
+            classifier_vis = None
+            if st.session_state['model_choice'] == "KNN":
+                classifier_vis = KNeighborsClassifier(**st.session_state['hyperparams'])
+            elif st.session_state['model_choice'] == "Logistic Regression":
+                classifier_vis = LogisticRegression(max_iter=1000, random_state=42, **st.session_state['hyperparams'])
+            elif st.session_state['model_choice'] == "Decision Tree":
+                classifier_vis = DecisionTreeClassifier(random_state=42, **st.session_state['hyperparams'])
 
-        if classifier_vis:
-            classifier_vis.fit(X_train_top2_np, y_train_np)
-            fig_db = plt.figure(figsize=(8, 6)) # Larger figure for decision boundary plot
-            plot_decision_regions(X_train_top2_np, y_train_np, clf=classifier_vis, legend=2)
-            plt.xlabel(selected_features[0].capitalize())
-            plt.ylabel(selected_features[1].capitalize())
-            plt.title(f'Граница решений для {st.session_state["model_choice"]}')
-            plt.grid(True)
-            st.pyplot(fig_db)
+            if classifier_vis:
+                classifier_vis.fit(X_train_top2_np, y_train_np)
+                fig_db = plt.figure(figsize=(8, 6))
+                plot_decision_regions(X_train_top2_np, y_train_np, clf=classifier_vis, legend=2, grid_points=grid_points_value)
+                plt.xlabel(selected_features[0].capitalize())
+                plt.ylabel(selected_features[1].capitalize())
+                plt.title(f'Граница решений для {st.session_state["model_choice"]}')
+                plt.grid(False) # Removed grid for cleaner look
+                st.pyplot(fig_db)
 
     elif show_decision_boundaries and len(selected_features) != 2:
         st.info("Границы решений отображаются только для 2 выбранных признаков. Выберите ровно 2 признака в боковой панели, чтобы увидеть их.")
@@ -260,13 +277,14 @@ if st.session_state.get('models_trained', False):
     auc_train = auc(roc_curve(st.session_state['y_train'], st.session_state['classifier'].predict_proba(st.session_state['X_train_selected'])[:, 1])[0],
                     roc_curve(st.session_state['y_train'], st.session_state['classifier'].predict_proba(st.session_state['X_train_selected'])[:, 1])[1])
     auc_test = auc(roc_curve(st.session_state['y_test'], st.session_state['y_prob'])[0], roc_curve(st.session_state['y_test'], st.session_state['y_prob'])[1])
-    st.metric("AUC на обучающей выборке", f"{auc_train:.2f}")
-    st.metric("AUC на тестовой выборке", f"{auc_test:.2f}")
+    col_auc_train, col_auc_test = st.columns(2) # side by side AUC metrics
+    col_auc_train.metric("AUC на обучающей выборке", f"{auc_train:.2f}")
+    col_auc_test.metric("AUC на тестовой выборке", f"{auc_test:.2f}")
 
 
 else:
     st.info("Нажмите кнопку 'Переобучить модель' в боковой панели, чтобы запустить обучение и оценку модели.")
 
 st.markdown("---")
-st.markdown("🚀 **Инструмент исследования Anneal Dataset** |  "
-            "Разработано с использованием Streamlit, Pandas, Scikit-learn, Matplotlib, Seaborn, Plotly, MLxtend.")
+st.markdown("🚀 **Anneal Steel Explorer Pro** | Интерактивное исследование и классификация  |  "
+            "Разработано с любовью к данным и Streamlit.")
