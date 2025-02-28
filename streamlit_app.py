@@ -234,8 +234,8 @@ if st.session_state.get('models_trained', False): # Conditional check here!
     # ---- Decision Boundary Plots (Conditional) ----
     if show_decision_boundaries and len(selected_features) == 2:
         st.header("🗺️ Граница решений")
-        X_train_top2_np = st.session_state['X_train_selected'].values
-        y_train_np = st.session_state['y_train'].values
+        X_train_top2_np = st.session_state['X_train_selected'].values.astype(np.float32) # Explicitly convert to float32
+        y_train_np = st.session_state['y_train'].values.astype(np.int32) # Explicitly convert to int32
 
         st.info("Граница решений визуализируется для первых двух выбранных признаков.")
 
@@ -249,6 +249,8 @@ if st.session_state.get('models_trained', False): # Conditional check here!
                 classifier_vis = DecisionTreeClassifier(random_state=42, **st.session_state['hyperparams'])
 
             if classifier_vis:
+                classifier_vis.fit(X_train_top2_np, y_train_np) # FIT classifier_vis here!
+
                 print(f"Type of X_train_top2_np: {X_train_top2_np.dtype}, Shape: {X_train_top2_np.shape}") # DEBUG
                 print(f"Type of y_train_np: {y_train_np.dtype}, Shape: {y_train_np.shape}") # DEBUG
                 print(f"Type of classifier_vis: {type(classifier_vis)}") # DEBUG
