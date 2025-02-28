@@ -275,15 +275,17 @@ if st.session_state.get('models_trained', False):
 # Логика для единичного предсказания
 if predict_single_button and st.session_state.get('models_trained', False) and prediction_data:
     single_prediction_df = pd.DataFrame([prediction_data])
-    single_prediction_df = single_prediction_df[st.session_state['selected_features']]
+    single_prediction_df = single_prediction_df[st.session_state['selected_features']].copy() # Важно использовать .copy() чтобы избежать SettingWithCopyWarning
 
     # Предобработка единичного образца
     for col in single_prediction_df.columns:
         if col in categorical_cols:
             single_prediction_df[col] = single_prediction_df[col].astype(str)
-            single_prediction_df[col] = label_encoder.transform(single_prediction_df[col])
-        elif col in numerical_cols:
-            single_prediction_df[col] = scaler.transform(single_prediction_df[[col]])
+            single_prediction_df[col] = label_encoder.transform(single_prediction_df[[col]]) # Кодируем категориальные
+    # Масштабируем численные признаки после кодирования категориальных, применяем к DataFrame целиком
+    numerical_cols_selected = [col for col in st.session_state['selected_features'] if col in numerical_cols] # Выбираем только численные признаки из selected_features
+    if numerical_cols_selected: # Проверяем, есть ли численные признаки для масштабирования
+        single_prediction_df[numerical_cols_selected] = scaler.transform(single_prediction_df[numerical_cols_selected])
 
 
     single_prediction = st.session_state['classifier'].predict(single_prediction_df)
