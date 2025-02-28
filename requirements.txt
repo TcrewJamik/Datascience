@@ -4,5 +4,3 @@ pandas
 plotly
 scikit-learn
 matplotlib
-mlxtend.plotting
-warnings
