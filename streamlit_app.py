@@ -75,9 +75,7 @@ X_train[numerical_cols] = scaler.fit_transform(X_train[numerical_cols])
 X_test[numerical_cols] = scaler.transform(X_test[numerical_cols])
 
 # ---- Streamlit App Layout ----
-st.title("⚙️ Anneal Steel Explorer Pro 🚀")
-st.markdown("Продвинутое приложение для исследования и классификации Anneal Steel Dataset. "
-            "Настройте модели, исследуйте данные и получите глубокое понимание!")
+st.title("⚙️ Anneal DataSet")
 
 # ---- Sidebar for Controls ----
 with st.sidebar:
@@ -88,15 +86,13 @@ with st.sidebar:
     if model_choice == "KNN":
         hyperparams['n_neighbors'] = st.slider("n_neighbors", min_value=1, max_value=20, value=3, step=1)
         hyperparams['weights'] = st.selectbox("weights", options=['uniform', 'distance'], index=0)
-        hyperparams['algorithm'] = st.selectbox("algorithm", options=['auto', 'ball_tree', 'kd_tree', 'brute'], index=0)
+        hyperparams['metric'] = st.selectbox("metric", options=['minkowski', 'euclidean', 'manhattan', 'chebyshev'], index=0)
         hyperparams['p'] = st.slider("p (Minkowski distance power)", min_value=1, max_value=5, value=2, step=1)
 
     elif model_choice == "Logistic Regression":
         hyperparams['C'] = st.slider("C (Regularization)", min_value=0.001, max_value=10.0, step=0.01, value=1.0, format="%.3f")
-        hyperparams['penalty'] = st.selectbox("penalty", options=['l1', 'l2', 'elasticnet', 'none'], index=1)
-        hyperparams['solver'] = st.selectbox("solver", options=['newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga'], index=1)
-        if hyperparams['penalty'] == 'elasticnet':
-            hyperparams['l1_ratio'] = st.slider("l1_ratio (Elastic-Net)", min_value=0.0, max_value=1.0, step=0.05, value=0.5)
+        hyperparams['penalty'] = st.selectbox("penalty", options=['l1', 'l2', 'none'], index=1)
+        hyperparams['solver'] = st.selectbox("solver", options=['lbfgs', 'liblinear'], index=1)
 
     elif model_choice == "Decision Tree":
         hyperparams['criterion'] = st.selectbox("criterion", options=['gini', 'entropy'], index=0)
@@ -110,7 +106,6 @@ with st.sidebar:
     available_features = X_train.columns.tolist()
     default_features = ['formability', 'condition'] if all(f in available_features for f in ['formability', 'condition']) else available_features[:min(2, len(available_features))]
     selected_features = st.multiselect("Выберите признаки для обучения:", available_features, default=default_features)
-    show_decision_boundaries = st.checkbox("Показать границы решений", value=False) # Default to False
     retrain_button = st.button("🔥 Переобучить модель")
 
 # ---- Data Exploration Section ----
@@ -232,5 +227,4 @@ if st.session_state.get('models_trained', False): # Conditional check here!
 
 
 st.markdown("---")
-st.markdown("🚀 **Anneal Steel Explorer Pro** | Интерактивное исследование и классификация  |  "
-            "Разработано с любовью к данным и Streamlit.")
+st.markdown("Разработано компанией Jamshed Corporation совместно с ZyplAI")
