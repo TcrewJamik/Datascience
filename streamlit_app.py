@@ -249,6 +249,11 @@ if st.session_state.get('models_trained', False): # Conditional check here!
                 classifier_vis = DecisionTreeClassifier(random_state=42, **st.session_state['hyperparams'])
 
             if classifier_vis:
+                print(f"Type of X_train_top2_np: {X_train_top2_np.dtype}, Shape: {X_train_top2_np.shape}") # DEBUG
+                print(f"Type of y_train_np: {y_train_np.dtype}, Shape: {y_train_np.shape}") # DEBUG
+                print(f"Type of classifier_vis: {type(classifier_vis)}") # DEBUG
+                print(f"Grid points value: {grid_points_value}, Type: {type(grid_points_value)}") # DEBUG
+
                 fig_db = plt.figure(figsize=(8, 6))
                 plot_decision_regions(X_train_top2_np, y_train_np, clf=classifier_vis, legend=2, grid_points=grid_points_value)
                 plt.xlabel(selected_features[0].capitalize())
