@@ -111,7 +111,7 @@ with st.sidebar:
     default_features = ['formability', 'condition'] if all(f in available_features for f in ['formability', 'condition']) else available_features[:min(2, len(available_features))]
     selected_features = st.multiselect("Выберите признаки для обучения:", available_features, default=default_features)
     show_decision_boundaries = st.checkbox("Показать границы решений", value=True)
-    grid_points_value = st.slider("Плотность сетки границ решений", min_value=20, max_value=150, value=75, step=25) # For performance control
+    grid_points_value = int(st.slider("Плотность сетки границ решений", min_value=20, max_value=150, value=75, step=25)) # Explicitly cast to int
     retrain_button = st.button("🔥 Переобучить модель")
 
 # ---- Data Exploration Section ----
