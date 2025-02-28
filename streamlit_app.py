@@ -232,7 +232,7 @@ if st.session_state.get('models_trained', False): # Conditional check here!
     st.text(classification_report(st.session_state['y_test'], st.session_state['y_pred']))
 
     # Display Prediction Results
-    st.header("🔮 Результаты предсказания")
+    st.header("Результаты предсказания")
     results_df = pd.DataFrame(st.session_state['X_test_selected'].copy())
     results_df['Истинный класс'] = st.session_state['y_test'].values
     results_df['Предсказанный класс'] = st.session_state['y_pred']
