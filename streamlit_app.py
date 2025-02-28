@@ -111,7 +111,7 @@ with st.sidebar:
     default_features = ['formability', 'condition'] if all(f in available_features for f in ['formability', 'condition']) else available_features[:min(2, len(available_features))]
     selected_features = st.multiselect("Выберите признаки для обучения:", available_features, default=default_features)
     show_decision_boundaries = st.checkbox("Показать границы решений", value=False) # Default to False to avoid initial error
-    grid_points_value = int(st.slider("Плотность сетки границ решений", min_value=20, max_value=150, value=75, step=25)) # Explicitly cast to int
+    resolution_value = st.slider("Разрешение сетки для границ решений", min_value=0.01, max_value=0.1, value=0.02, step=0.01)
     retrain_button = st.button("🔥 Переобучить модель")
 
 # ---- Data Exploration Section ----
@@ -251,13 +251,8 @@ if st.session_state.get('models_trained', False): # Conditional check here!
             if classifier_vis:
                 classifier_vis.fit(X_train_top2_np, y_train_np) # FIT classifier_vis here!
 
-                print(f"Type of X_train_top2_np: {X_train_top2_np.dtype}, Shape: {X_train_top2_np.shape}") # DEBUG
-                print(f"Type of y_train_np: {y_train_np.dtype}, Shape: {y_train_np.shape}") # DEBUG
-                print(f"Type of classifier_vis: {type(classifier_vis)}") # DEBUG
-                print(f"Grid points value: {grid_points_value}, Type: {type(grid_points_value)}") # DEBUG
-
                 fig_db = plt.figure(figsize=(8, 6))
-                plot_decision_regions(X_train_top2_np, y_train_np, clf=classifier_vis, legend=2, grid_points=grid_points_value)
+                plot_decision_regions(X_train_top2_np, y_train_np, clf=classifier_vis, legend=2, resolution=resolution_value) # Use resolution here!
                 plt.xlabel(selected_features[0].capitalize())
                 plt.ylabel(selected_features[1].capitalize())
                 plt.title(f'Граница решений для {st.session_state["model_choice"]}')
