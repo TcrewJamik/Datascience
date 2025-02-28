@@ -114,7 +114,7 @@ with st.sidebar:
     available_features = X_train.columns.tolist()
     default_features = ['formability', 'condition'] if all(f in available_features for f in ['formability', 'condition']) else available_features[:min(2, len(available_features))]
     selected_features = st.multiselect("Выберите признаки для обучения:", available_features, default=default_features)
-    retrain_button = st.button("🔥 Переобучить модель")
+    retrain_button = st.button("🔥 Предсказать")
 
 # Иследование данных
 expander_data_explore = st.expander("🔍 Исследование данных", expanded=False)
