@@ -110,8 +110,7 @@ with st.sidebar:
     available_features = X_train.columns.tolist()
     default_features = ['formability', 'condition'] if all(f in available_features for f in ['formability', 'condition']) else available_features[:min(2, len(available_features))]
     selected_features = st.multiselect("Выберите признаки для обучения:", available_features, default=default_features)
-    show_decision_boundaries = st.checkbox("Показать границы решений", value=False) # Default to False to avoid initial error
-    resolution_value = st.slider("Разрешение сетки для границ решений", min_value=0.01, max_value=0.1, value=0.02, step=0.01)
+    show_decision_boundaries = st.checkbox("Показать границы решений", value=False) # Default to False
     retrain_button = st.button("🔥 Переобучить модель")
 
 # ---- Data Exploration Section ----
@@ -231,40 +230,6 @@ if st.session_state.get('models_trained', False): # Conditional check here!
     st.subheader("Отчет о классификации")
     st.text(classification_report(st.session_state['y_test'], st.session_state['y_pred']))
 
-    # ---- Decision Boundary Plots (Conditional) ----
-    if show_decision_boundaries and len(selected_features) == 2:
-        st.header("🗺️ Граница решений")
-        X_train_top2_np = st.session_state['X_train_selected'].values.astype(np.float32) # Explicitly convert to float32
-        y_train_np = st.session_state['y_train'].values.astype(np.int32) # Explicitly convert to int32
-
-        st.info("Граница решений визуализируется для первых двух выбранных признаков.")
-
-        with st.spinner("Отрисовка границ решений..."):
-            classifier_vis = None
-            if st.session_state['model_choice'] == "KNN":
-                classifier_vis = KNeighborsClassifier(**st.session_state['hyperparams'])
-            elif st.session_state['model_choice'] == "Logistic Regression":
-                classifier_vis = LogisticRegression(max_iter=1000, random_state=42, **st.session_state['hyperparams'])
-            elif st.session_state['model_choice'] == "Decision Tree":
-                classifier_vis = DecisionTreeClassifier(random_state=42, **st.session_state['hyperparams'])
-
-            if classifier_vis:
-                classifier_vis.fit(X_train_top2_np, y_train_np) # FIT classifier_vis here!
-
-                fig_db = plt.figure(figsize=(8, 6))
-                plot_decision_regions(X_train_top2_np, y_train_np, clf=st.session_state['classifier'], legend=2, resolution=resolution_value) # Use st.session_state['classifier']!
-                plt.xlabel(selected_features[0].capitalize())
-                plt.ylabel(selected_features[1].capitalize())
-                plt.title(f'Граница решений для {st.session_state["model_choice"]}')
-                plt.grid(False) # Removed grid for cleaner look
-                st.pyplot(fig_db)
-            else:
-                st.error("Не удалось отобразить границу решений.") # Indicate failure if classifier_vis is None
-
-    elif show_decision_boundaries and len(selected_features) != 2:
-        st.info("Границы решений отображаются только для 2 выбранных признаков. Выберите ровно 2 признака в боковой панели, чтобы увидеть их.")
-else:
-    st.info("Нажмите кнопку 'Переобучить модель' в боковой панели, чтобы запустить обучение и оценку модели.")
 
 st.markdown("---")
 st.markdown("🚀 **Anneal Steel Explorer Pro** | Интерактивное исследование и классификация  |  "
