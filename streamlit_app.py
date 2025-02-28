@@ -110,7 +110,7 @@ with st.sidebar:
     available_features = X_train.columns.tolist()
     default_features = ['formability', 'condition'] if all(f in available_features for f in ['formability', 'condition']) else available_features[:min(2, len(available_features))]
     selected_features = st.multiselect("Выберите признаки для обучения:", available_features, default=default_features)
-    show_decision_boundaries = st.checkbox("Показать границы решений", value=True)
+    show_decision_boundaries = st.checkbox("Показать границы решений", value=False) # Default to False to avoid initial error
     grid_points_value = int(st.slider("Плотность сетки границ решений", min_value=20, max_value=150, value=75, step=25)) # Explicitly cast to int
     retrain_button = st.button("🔥 Переобучить модель")
 
@@ -249,38 +249,18 @@ if st.session_state.get('models_trained', False): # Conditional check here!
                 classifier_vis = DecisionTreeClassifier(random_state=42, **st.session_state['hyperparams'])
 
             if classifier_vis:
-                print(f"Type of grid_points_value: {type(grid_points_value)}") # DEBUG PRINT
+                fig_db = plt.figure(figsize=(8, 6))
                 plot_decision_regions(X_train_top2_np, y_train_np, clf=classifier_vis, legend=2, grid_points=grid_points_value)
                 plt.xlabel(selected_features[0].capitalize())
                 plt.ylabel(selected_features[1].capitalize())
                 plt.title(f'Граница решений для {st.session_state["model_choice"]}')
                 plt.grid(False) # Removed grid for cleaner look
                 st.pyplot(fig_db)
+            else:
+                st.error("Не удалось отобразить границу решений.") # Indicate failure if classifier_vis is None
 
     elif show_decision_boundaries and len(selected_features) != 2:
         st.info("Границы решений отображаются только для 2 выбранных признаков. Выберите ровно 2 признака в боковой панели, чтобы увидеть их.")
-
-    # ---- Feature Importance (Decision Tree - Conditional) ----
-    if st.session_state['model_choice'] == "Decision Tree" and len(selected_features) >= 1 and isinstance(st.session_state['classifier'], DecisionTreeClassifier):
-        feature_importance = pd.DataFrame({'Feature': st.session_state['X_train_selected'].columns, 'Importance': st.session_state['classifier'].feature_importances_})
-        feature_importance = feature_importance.sort_values('Importance', ascending=False)
-
-        st.header("✨ Важность признаков")
-        fig_feature_importance_plotly = px.bar(feature_importance, x='Importance', y='Feature', orientation='h',
-                                                labels={'Importance': 'Важность', 'Feature': 'Признак'},
-                                                title='Важность признаков (Decision Tree)')
-        st.plotly_chart(fig_feature_importance_plotly)
-
-    # ---- AUC on Train/Test ----
-    st.header("📊 AUC на обучающей и тестовой выборках")
-    auc_train = auc(roc_curve(st.session_state['y_train'], st.session_state['classifier'].predict_proba(st.session_state['X_train_selected'])[:, 1])[0],
-                    roc_curve(st.session_state['y_train'], st.session_state['classifier'].predict_proba(st.session_state['X_train_selected'])[:, 1])[1])
-    auc_test = auc(roc_curve(st.session_state['y_test'], st.session_state['y_prob'])[0], roc_curve(st.session_state['y_test'], st.session_state['y_prob'])[1])
-    col_auc_train, col_auc_test = st.columns(2) # side by side AUC metrics
-    col_auc_train.metric("AUC на обучающей выборке", f"{auc_train:.2f}")
-    col_auc_test.metric("AUC на тестовой выборке", f"{auc_test:.2f}")
-
-
 else:
     st.info("Нажмите кнопку 'Переобучить модель' в боковой панели, чтобы запустить обучение и оценку модели.")
 
