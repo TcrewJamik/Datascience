@@ -117,14 +117,14 @@ with st.sidebar:
     retrain_button = st.button("🔥 Предсказать")
 
     st.markdown("---")
-    st.header("Предсказание")
+    st.header("🔮 Единичное предсказание")
     prediction_data = {}
     if selected_features:
         for feature in selected_features:
             if feature in numerical_cols:
                 min_val = float(X_train[feature].min())
                 max_val = float(X_train[feature].max())
-                default_val = float(X_train[feature].mean())  
+                default_val = float(X_train[feature].mean())  # Можно выбрать другое значение по умолчанию
                 prediction_data[feature] = st.sidebar.slider(
                     f"Выберите значение для {feature}:",
                     min_value=min_val,
@@ -201,7 +201,7 @@ if retrain_button or not st.session_state.get('models_trained', False):
     if model_choice == "KNN":
         classifier = KNeighborsClassifier(**hyperparams)
     elif model_choice == "Logistic Regression":
-        classifier = LogisticRegression(max_iter=1000, random_state=42, class_weight='balanced', **hyperparams) 
+        classifier = LogisticRegression(max_iter=1000, random_state=42, class_weight='balanced', **hyperparams) # Increased max_iter
     elif model_choice == "Decision Tree":
         classifier = DecisionTreeClassifier(random_state=42, **hyperparams)
     else:
@@ -238,7 +238,7 @@ if st.session_state.get('models_trained', False):
         st.metric("Полнота (Recall)", f"{recall_score(st.session_state['y_test'], st.session_state['y_pred']):.3f}")
 
     with col_charts:
-        # Confusion Matrix
+        # Confusion Matri
         cm = confusion_matrix(st.session_state['y_test'], st.session_state['y_pred'])
         fig_cm, ax_cm = plt.subplots()
         sns.heatmap(cm, annot=True, fmt='d', cmap='viridis', ax=ax_cm)
@@ -272,17 +272,19 @@ if st.session_state.get('models_trained', False):
     st.dataframe(results_df)
 
 
+# Логика для единичного предсказания
 if predict_single_button and st.session_state.get('models_trained', False) and prediction_data:
     single_prediction_df = pd.DataFrame([prediction_data])
-    single_prediction_df = single_prediction_df[st.session_state['selected_features']].copy() 
+    single_prediction_df = single_prediction_df[st.session_state['selected_features']].copy() # Важно использовать .copy() чтобы избежать SettingWithCopyWarning
 
-    # Предобработка
+    # Предобработка единичного образца
     for col in single_prediction_df.columns:
         if col in categorical_cols:
             single_prediction_df[col] = single_prediction_df[col].astype(str)
-            single_prediction_df[col] = label_encoder.transform(single_prediction_df[[col]]) 
-    numerical_cols_selected = [col for col in st.session_state['selected_features'] if col in numerical_cols] 
-    if numerical_cols_selected: 
+            single_prediction_df[col] = label_encoder.transform(single_prediction_df[[col]]) # Кодируем категориальные
+    # Масштабируем численные признаки после кодирования категориальных, применяем к DataFrame целиком
+    numerical_cols_selected = [col for col in st.session_state['selected_features'] if col in numerical_cols] # Выбираем только численные признаки из selected_features
+    if numerical_cols_selected: # Проверяем, есть ли численные признаки для масштабирования
         single_prediction_df[numerical_cols_selected] = scaler.transform(single_prediction_df[numerical_cols_selected])
 
 
